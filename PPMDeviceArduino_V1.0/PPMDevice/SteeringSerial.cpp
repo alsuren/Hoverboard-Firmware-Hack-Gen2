@@ -30,6 +30,15 @@
 
 #include "SteeringSerial.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <fcntl.h>   // Contains file controls like O_RDWR
+#include <errno.h>   // Error integer and strerror() function
+#include <termios.h> // Contains POSIX terminal control definitions
+#include <unistd.h>  // write(), read(), close()
+
 //----------------------------------------------------------------------------
 // Variables
 //----------------------------------------------------------------------------
@@ -47,13 +56,31 @@ uint8_t activateWeakening = 0;
 void SendBuffer(uint8_t buffer[], uint8_t length);
 uint16_t CalcCRC(uint8_t *ptr, int count);
 
+
+struct termios tty;
+int serial_port = -1;
+
 //----------------------------------------------------------------------------
 // Initializes the steering serial
 //----------------------------------------------------------------------------
 void InitSteeringSerial(void)
 {
-  // Set up serial communication
-  Serial.begin(19200, SERIAL_8N1);
+
+    // serial_port = open("/dev/ttyS0", O_RDWR);
+    serial_port = open("/dev/ttyUSB0", O_RDWR);
+    if (serial_port < 0)
+    {
+        printf("Error %i from open: %s\n", errno, strerror(errno));
+    }
+
+
+    if (tcgetattr(serial_port, &tty) != 0)
+    {
+        printf("Error %i from tcgetattr: %s\n", errno, strerror(errno));
+    }
+
+    cfsetispeed(&tty, 115200);
+    cfsetospeed(&tty, 115200);
 }
 
 //----------------------------------------------------------------------------
@@ -162,20 +189,42 @@ uint16_t CalcCRC(uint8_t *ptr, int count)
 //----------------------------------------------------------------------------
 void SendBuffer(uint8_t buffer[], uint8_t length)
 {
-  uint8_t index = 0;
-  
-  for(; index < length; index++)
+  ssize_t result = write(serial_port, buffer, length);
+  if (result < 1)
   {
-    Serial.write(buffer[index]);
+      printf("Error reading: %s\n", strerror(errno));
+      abort();
   }
+}
+
+uint8_t ReadByte() {
+  uint8_t read_buf = 0;
+  // printf("%i &p \n", serial_port, read_buf);
+  int num_bytes = read(serial_port, &read_buf, 1);
+  if (num_bytes < 0)
+  {
+      printf("Error reading: %s\n", strerror(errno));
+      abort();
+  }
+  else if (num_bytes == 1) {
+    if (read_buf == '/'){
+      printf("[%d /]\n", read_buf);
+    } else if (read_buf == '\n'){
+      printf("[%d \\n]\n", read_buf);
+    } else {
+      printf("[%d]\n", read_buf);
+    }
+  }
+
+  return read_buf;
 }
 
 //----------------------------------------------------------------------------
 // Sends debug infos
 //----------------------------------------------------------------------------
-void SendDebug()
-{
-  Serial.print(speedValue);
-  Serial.print(",");
-  Serial.println(steerValue);
-}
+// void SendDebug()
+// {
+//   Serial.print(speedValue);
+//   Serial.print(",");
+//   Serial.println(steerValue);
+// }

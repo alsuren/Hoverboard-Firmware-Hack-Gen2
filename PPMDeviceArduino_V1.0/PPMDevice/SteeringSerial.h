@@ -32,7 +32,7 @@
 #define STEERINGSERIAL_H
 
 #include <inttypes.h>
-#include <hardwareSerial.h>
+// #include <hardwareSerial.h>
 #include "utils.h"
 
 //----------------------------------------------------------------------------
@@ -60,5 +60,8 @@ void SendAnswer(void);
 // Sends debug infos
 //----------------------------------------------------------------------------
 void SendDebug();
+
+
+uint8_t ReadByte();
 
 #endif
