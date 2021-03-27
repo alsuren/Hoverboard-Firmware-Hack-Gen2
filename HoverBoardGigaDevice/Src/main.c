@@ -436,7 +436,16 @@ int main (void)
 		// Shut device off, when battery is dead
 		else if (batteryVoltage < BAT_LOW_DEAD)
 		{
+
       debug_print("low battery");
+
+      char buffer[256];
+      int len = snprintf(
+        buffer, sizeof(buffer),
+        "!batteryVoltage: %d BAT_LOW_DEAD: %d\n",
+        (int)batteryVoltage, (int)BAT_LOW_DEAD);
+
+      SendBuffer(USART_MASTERSLAVE, (uint8_t *) buffer, len);
       ShutOff();
     }
 		else
