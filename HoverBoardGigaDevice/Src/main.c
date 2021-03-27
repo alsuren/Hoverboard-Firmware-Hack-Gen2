@@ -343,17 +343,6 @@ int main (void)
 			SendSteerDevice();
 		}
 
-
-    debug_printf("speed: %d steerCounter: %d", speed, steerCounter);
-
-    if (steerCounter >= 1000) {
-      speed = 0;
-    } else if (steerCounter >= 100) {
-      speed++;
-      ResetTimeout();
-    }
-
-
 		// Calculate expo rate for less steering with higher speeds
 		expo = MAP((float)ABS(speed), 0, 1000, 1, 0.5);
 
