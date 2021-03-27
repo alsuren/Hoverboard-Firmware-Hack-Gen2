@@ -333,6 +333,8 @@ int main (void)
 	}
 #endif
 
+  debug_printf("started up");
+
   while(1)
 	{
 #ifdef MASTER

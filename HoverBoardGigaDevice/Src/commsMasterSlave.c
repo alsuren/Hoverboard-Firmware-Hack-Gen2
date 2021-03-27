@@ -69,8 +69,13 @@ extern uint8_t usartMasterSlave_rx_buf[USART_MASTERSLAVE_RX_BUFFERSIZE];
 static uint8_t sMasterSlaveRecord = 0;
 static uint8_t sUSARTMasterSlaveRecordBuffer[USART_MASTERSLAVE_RX_BYTES];
 static uint8_t sUSARTMasterSlaveRecordBufferCounter = 0;
+static uint8_t sAsciiCommandRecord = 0;
+static uint8_t sUSARTAsciiCommandRecordBuffer[256];
+static uint8_t sUSARTAsciiCommandRecordBufferCounter = 0;
 
 void CheckUSARTMasterSlaveInput(uint8_t u8USARTBuffer[]);
+void CheckUSARTAsciiCommandInput(uint8_t USARTBuffer[]);
+
 void SendBuffer(uint32_t usart_periph, uint8_t buffer[], uint8_t length);
 uint16_t CalcCRC(uint8_t *ptr, int count);
 
@@ -82,10 +87,13 @@ void UpdateUSARTMasterSlaveInput(void)
 	uint8_t character = usartMasterSlave_rx_buf[0];
 	
 	// Start character is captured, start record
-	if (character == '/')
-	{
+	if (sMasterSlaveRecord || sAsciiCommandRecord) {
+		// Don't start a new command if we're already handling one.
+	} else if (character == '/') {
 		sUSARTMasterSlaveRecordBufferCounter = 0;
 		sMasterSlaveRecord = 1;
+	} else if (character == '!') {
+		sAsciiCommandRecord = 1;
 	}
 
 	if (sMasterSlaveRecord)
@@ -100,6 +108,22 @@ void UpdateUSARTMasterSlaveInput(void)
 			
 			// Check input
 			CheckUSARTMasterSlaveInput (sUSARTMasterSlaveRecordBuffer);
+		}
+	} else if (sAsciiCommandRecord) {
+		sUSARTAsciiCommandRecordBuffer[sUSARTAsciiCommandRecordBufferCounter] = character;
+		sUSARTAsciiCommandRecordBufferCounter++;
+
+		usart_data_transmit(USART_MASTERSLAVE, character);
+
+		if (character == '\n')
+		{
+			sUSARTAsciiCommandRecordBuffer[sUSARTAsciiCommandRecordBufferCounter] = '\0';
+
+			sUSARTAsciiCommandRecordBufferCounter = 0;
+			sAsciiCommandRecord = 0;
+
+			// Check input
+			CheckUSARTAsciiCommandInput (sUSARTAsciiCommandRecordBuffer);
 		}
 	}
 }
@@ -220,6 +244,33 @@ void CheckUSARTMasterSlaveInput(uint8_t USARTBuffer[])
 	// Reset the pwm timout to avoid stopping motors
 	ResetTimeout();
 #endif
+}
+
+void CheckUSARTAsciiCommandInput(uint8_t USARTBuffer[])
+{
+	debug_printf("%s", (char *)USARTBuffer);
+
+	int cmp = strcmp((char *)USARTBuffer, "!ping\n");
+	if (!cmp) {
+		debug_printf("pong");
+	} else {
+		debug_printf("%s - command not known %d", (char *)USARTBuffer, cmp);
+		for (int i = 0; USARTBuffer[i] != '\0'; i++) {
+			debug_printf("%d", USARTBuffer[i]);
+		}
+	}
+}
+
+void debug_printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+	char buffer[256];
+	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "> ", 2);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) buffer, len);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "\n", 1);
 }
 
 #ifdef MASTER
