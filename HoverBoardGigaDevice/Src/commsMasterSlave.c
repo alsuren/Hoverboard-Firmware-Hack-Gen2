@@ -235,6 +235,12 @@ void SendSlave(int16_t pwmSlave, FlagStatus enable, FlagStatus shutoff, FlagStat
 
 	SendBuffer(USART_MASTERSLAVE, (uint8_t *) buffer, len);
 }
+
+void debug_print(char * message) {
+	SendBuffer(USART_MASTERSLAVE, "!", 1);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) message, strlen(message));
+	SendBuffer(USART_MASTERSLAVE, "\n", 1);
+}
 #endif
 #ifdef SLAVE
 //----------------------------------------------------------------------------

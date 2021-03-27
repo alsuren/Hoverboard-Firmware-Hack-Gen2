@@ -436,10 +436,12 @@ int main (void)
 		// Shut device off, when battery is dead
 		else if (batteryVoltage < BAT_LOW_DEAD)
 		{
+      debug_print("low battery");
       ShutOff();
     }
 		else
 		{
+      debug_print("failsafe");
 			ShutOff();
     }
 
