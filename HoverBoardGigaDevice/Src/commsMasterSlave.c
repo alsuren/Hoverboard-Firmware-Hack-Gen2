@@ -227,43 +227,13 @@ void CheckUSARTMasterSlaveInput(uint8_t USARTBuffer[])
 //----------------------------------------------------------------------------
 void SendSlave(int16_t pwmSlave, FlagStatus enable, FlagStatus shutoff, FlagStatus chargeState, uint8_t identifier, int16_t value)
 {
-	uint8_t index = 0;
-	uint16_t crc = 0;
-	uint8_t buffer[USART_MASTERSLAVE_TX_BYTES];
-	
-	// Format pwmValue and general value
-	int16_t sendPwm = CLAMP(pwmSlave, -1000, 1000);
-	uint16_t sendPwm_Uint = (uint16_t)(sendPwm);
-	uint16_t value_Uint = (uint16_t)(value);
-	
-	uint8_t sendByte = 0;
-	sendByte |= (shutoff << 7);
-	sendByte |= (0 << 6);
-	sendByte |= (0 << 5);
-	sendByte |= (0 << 4);
-	sendByte |= (0 << 3);
-	sendByte |= (0 << 2);
-	sendByte |= (chargeState << 1);
-	sendByte |= (enable << 0);
-	
-	// Send answer
-	buffer[index++] = '/';
-	buffer[index++] = (sendPwm_Uint >> 8) & 0xFF;
-	buffer[index++] = sendPwm_Uint & 0xFF;
-	buffer[index++] = identifier;
-	buffer[index++] = (value_Uint >> 8) & 0xFF;
-	buffer[index++] = value_Uint & 0xFF;	
-	buffer[index++] = sendByte;
-	
-	// Calculate CRC
-  crc = CalcCRC(buffer, index);
-  buffer[index++] = (crc >> 8) & 0xFF;
-  buffer[index++] = crc & 0xFF;
+	char buffer[256];
+	int len = snprintf(
+		buffer, sizeof(buffer),
+		"/enable: %d shutoff: %d chargeState: %d id: %d val: %d\n",
+		enable, shutoff, chargeState, identifier, value);
 
-  // Stop byte
-  buffer[index++] = '\n';
-	
-	SendBuffer(USART_MASTERSLAVE, buffer, index);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) buffer, len);
 }
 #endif
 #ifdef SLAVE
