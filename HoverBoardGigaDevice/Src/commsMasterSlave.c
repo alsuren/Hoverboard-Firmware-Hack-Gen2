@@ -38,6 +38,7 @@
 #include "../Inc/bldc.h"
 #include "stdio.h"
 #include "string.h"
+#include <stdarg.h>
 
 #ifdef MASTER
 #define USART_MASTERSLAVE_TX_BYTES 10  // Transmit byte count including start '/' and stop character '\n'
@@ -230,14 +231,27 @@ void SendSlave(int16_t pwmSlave, FlagStatus enable, FlagStatus shutoff, FlagStat
 	char buffer[256];
 	int len = snprintf(
 		buffer, sizeof(buffer),
-		"/enable: %d shutoff: %d chargeState: %d id: %d val: %d\n",
-		enable, shutoff, chargeState, identifier, value);
+		"/pwm: %d enable: %d shutoff: %d chargeState: %d id: %d val: %d\n",
+		pwmSlave, enable, shutoff, chargeState, identifier, value);
 
 	SendBuffer(USART_MASTERSLAVE, (uint8_t *) buffer, len);
 }
 
+
+void debug_printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+	char buffer[256];
+	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "> ", 2);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) buffer, len);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "\n", 1);
+}
+
 void debug_print(char * message) {
-	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "!", 1);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "> ", 2);
 	SendBuffer(USART_MASTERSLAVE, (uint8_t *) message, strlen(message));
 	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "\n", 1);
 }

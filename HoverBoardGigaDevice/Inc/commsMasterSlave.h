@@ -47,6 +47,8 @@ void SendSlave(int16_t pwmSlave, FlagStatus enable, FlagStatus shutoff, FlagStat
 void SendBuffer(uint32_t usart_periph, uint8_t buffer[], uint8_t length);
 
 void debug_print(char * message);
+void debug_printf(const char *__restrict __format, ...);
+
 #endif
 #ifdef SLAVE
 //----------------------------------------------------------------------------

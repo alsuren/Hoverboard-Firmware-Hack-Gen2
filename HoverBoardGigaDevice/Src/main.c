@@ -375,6 +375,8 @@ int main (void)
 
 		// Enable channel output
 		SetEnable(enable);
+    debug_printf("enable: %d pwmMaster: %d", enable, pwmMaster);
+
 
 		// Decide if slave will be enabled
 		enableSlave = (enable == SET && timedOut == RESET) ? SET : RESET;
