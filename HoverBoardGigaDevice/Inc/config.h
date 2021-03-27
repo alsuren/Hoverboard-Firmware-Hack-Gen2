@@ -56,9 +56,10 @@
 
 // ################################################################################
 
-#define BAT_LOW_LVL1     25.9       // Gently beeps, show green battery symbol above this Level.
-#define BAT_LOW_LVL2     24.0       // Battery almost empty, show orange battery symbol above this Level. Charge now!
-#define BAT_LOW_DEAD     22.0       // Undervoltage lockout, show red battery symbol below this Level.
+// battery is rated at 25.9v
+#define BAT_LOW_LVL1     24.0       // Gently beeps, show green battery symbol above this Level.
+#define BAT_LOW_LVL2     22.0       // Battery almost empty, show orange battery symbol above this Level. Charge now!
+#define BAT_LOW_DEAD     20.0       // Undervoltage lockout, show red battery symbol below this Level.
 // ONLY DEBUG-LEVEL!!!
 //#define BAT_LOW_LVL1     29.0
 //#define BAT_LOW_LVL2     28.0
