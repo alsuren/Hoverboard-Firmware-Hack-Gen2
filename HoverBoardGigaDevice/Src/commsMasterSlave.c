@@ -276,6 +276,7 @@ void CheckUSARTAsciiCommandInput(uint8_t USARTBuffer[])
 {
 	debug_printf("%s", (char *)USARTBuffer);
 
+	// FIXME: miniterm defaults to \r\n. Write a helper to accept this form too.
 	if (!strcmp((char *)USARTBuffer, "!ping\n")) {
 		debug_printf("pong");
 	} else if (!strcmp((char *)USARTBuffer, "!forward\n")) {
