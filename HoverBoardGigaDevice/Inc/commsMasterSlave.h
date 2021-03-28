@@ -112,10 +112,10 @@ void SetBeepsBackwardsMaster(FlagStatus value);
 // Returns beepsBackwardsMaster value sent by master
 //----------------------------------------------------------------------------
 FlagStatus GetBeepsBackwardsMaster(void);
+#endif
 
 void ClearTargetPosition(void);
 int8_t GetTargetPosition(void);
 int8_t GetTargetDirection(void);
-#endif
 
 #endif

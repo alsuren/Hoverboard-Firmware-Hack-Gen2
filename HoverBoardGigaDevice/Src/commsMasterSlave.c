@@ -297,9 +297,16 @@ void debug_printf(const char *fmt, ...) {
 
 	char buffer[256];
 	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+	va_end(args);
 
 	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "> ", 2);
 	SendBuffer(USART_MASTERSLAVE, (uint8_t *) buffer, len);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "\n", 1);
+}
+
+void debug_print(char * message) {
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "> ", 2);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) message, strlen(message));
 	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "\n", 1);
 }
 
@@ -318,24 +325,6 @@ void SendSlave(int16_t pwmSlave, FlagStatus enable, FlagStatus shutoff, FlagStat
 	SendBuffer(USART_MASTERSLAVE, (uint8_t *) buffer, len);
 }
 
-
-void debug_printf(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-
-	char buffer[256];
-	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
-
-	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "> ", 2);
-	SendBuffer(USART_MASTERSLAVE, (uint8_t *) buffer, len);
-	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "\n", 1);
-}
-
-void debug_print(char * message) {
-	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "> ", 2);
-	SendBuffer(USART_MASTERSLAVE, (uint8_t *) message, strlen(message));
-	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "\n", 1);
-}
 #endif
 #ifdef SLAVE
 //----------------------------------------------------------------------------

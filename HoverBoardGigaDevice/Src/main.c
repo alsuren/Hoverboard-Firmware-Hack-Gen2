@@ -481,24 +481,22 @@ int main (void)
       ShutOff();
     }
 #endif
-#ifdef SLAVE
     if (GetTargetPosition() != 0) {
       if (GetTargetPosition() != GetPos()) {
         speed += GetTargetDirection();
         debug_printf(
           "aiming for %d from %d. speed = %d",
           GetTargetPosition(), GetPos(), speed);
-        SetPWM(speed);
+        // SetPWM(speed);
         SetEnable(SET);
       } else {
         debug_printf("arrived at %d", GetPos());
         ClearTargetPosition();
-        SetPWM(0);
+        // SetPWM(0);
         SetEnable(RESET);
         speed = 0;
       }
     }
-#endif
 
 		Delay(DELAY_IN_MAIN_LOOP);
 
