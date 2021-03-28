@@ -38,6 +38,7 @@
 #include "../Inc/bldc.h"
 #include "stdio.h"
 #include "string.h"
+#include <stdarg.h>
 
 #ifdef MASTER
 #define USART_MASTERSLAVE_TX_BYTES 10  // Transmit byte count including start '/' and stop character '\n'
@@ -68,8 +69,13 @@ extern uint8_t usartMasterSlave_rx_buf[USART_MASTERSLAVE_RX_BUFFERSIZE];
 static uint8_t sMasterSlaveRecord = 0;
 static uint8_t sUSARTMasterSlaveRecordBuffer[USART_MASTERSLAVE_RX_BYTES];
 static uint8_t sUSARTMasterSlaveRecordBufferCounter = 0;
+static uint8_t sAsciiCommandRecord = 0;
+static uint8_t sUSARTAsciiCommandRecordBuffer[256];
+static uint8_t sUSARTAsciiCommandRecordBufferCounter = 0;
 
 void CheckUSARTMasterSlaveInput(uint8_t u8USARTBuffer[]);
+void CheckUSARTAsciiCommandInput(uint8_t USARTBuffer[]);
+
 void SendBuffer(uint32_t usart_periph, uint8_t buffer[], uint8_t length);
 uint16_t CalcCRC(uint8_t *ptr, int count);
 
@@ -81,10 +87,13 @@ void UpdateUSARTMasterSlaveInput(void)
 	uint8_t character = usartMasterSlave_rx_buf[0];
 	
 	// Start character is captured, start record
-	if (character == '/')
-	{
+	if (sMasterSlaveRecord || sAsciiCommandRecord) {
+		// Don't start a new command if we're already handling one.
+	} else if (character == '/') {
 		sUSARTMasterSlaveRecordBufferCounter = 0;
 		sMasterSlaveRecord = 1;
+	} else if (character == '!') {
+		sAsciiCommandRecord = 1;
 	}
 
 	if (sMasterSlaveRecord)
@@ -99,6 +108,22 @@ void UpdateUSARTMasterSlaveInput(void)
 			
 			// Check input
 			CheckUSARTMasterSlaveInput (sUSARTMasterSlaveRecordBuffer);
+		}
+	} else if (sAsciiCommandRecord) {
+		sUSARTAsciiCommandRecordBuffer[sUSARTAsciiCommandRecordBufferCounter] = character;
+		sUSARTAsciiCommandRecordBufferCounter++;
+
+		usart_data_transmit(USART_MASTERSLAVE, character);
+
+		if (character == '\n')
+		{
+			sUSARTAsciiCommandRecordBuffer[sUSARTAsciiCommandRecordBufferCounter] = '\0';
+
+			sUSARTAsciiCommandRecordBufferCounter = 0;
+			sAsciiCommandRecord = 0;
+
+			// Check input
+			CheckUSARTAsciiCommandInput (sUSARTAsciiCommandRecordBuffer);
 		}
 	}
 }
@@ -221,49 +246,65 @@ void CheckUSARTMasterSlaveInput(uint8_t USARTBuffer[])
 #endif
 }
 
+void CheckUSARTAsciiCommandInput(uint8_t USARTBuffer[])
+{
+	debug_printf("%s", (char *)USARTBuffer);
+
+	int cmp = strcmp((char *)USARTBuffer, "!ping\n");
+	if (!cmp) {
+		debug_printf("pong");
+	} else {
+		debug_printf("%s - command not known %d", (char *)USARTBuffer, cmp);
+		for (int i = 0; USARTBuffer[i] != '\0'; i++) {
+			debug_printf("%d", USARTBuffer[i]);
+		}
+	}
+}
+
+void debug_printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+	char buffer[256];
+	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "> ", 2);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) buffer, len);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "\n", 1);
+}
+
 #ifdef MASTER
 //----------------------------------------------------------------------------
 // Send slave frame via USART
 //----------------------------------------------------------------------------
 void SendSlave(int16_t pwmSlave, FlagStatus enable, FlagStatus shutoff, FlagStatus chargeState, uint8_t identifier, int16_t value)
 {
-	uint8_t index = 0;
-	uint16_t crc = 0;
-	uint8_t buffer[USART_MASTERSLAVE_TX_BYTES];
-	
-	// Format pwmValue and general value
-	int16_t sendPwm = CLAMP(pwmSlave, -1000, 1000);
-	uint16_t sendPwm_Uint = (uint16_t)(sendPwm);
-	uint16_t value_Uint = (uint16_t)(value);
-	
-	uint8_t sendByte = 0;
-	sendByte |= (shutoff << 7);
-	sendByte |= (0 << 6);
-	sendByte |= (0 << 5);
-	sendByte |= (0 << 4);
-	sendByte |= (0 << 3);
-	sendByte |= (0 << 2);
-	sendByte |= (chargeState << 1);
-	sendByte |= (enable << 0);
-	
-	// Send answer
-	buffer[index++] = '/';
-	buffer[index++] = (sendPwm_Uint >> 8) & 0xFF;
-	buffer[index++] = sendPwm_Uint & 0xFF;
-	buffer[index++] = identifier;
-	buffer[index++] = (value_Uint >> 8) & 0xFF;
-	buffer[index++] = value_Uint & 0xFF;	
-	buffer[index++] = sendByte;
-	
-	// Calculate CRC
-  crc = CalcCRC(buffer, index);
-  buffer[index++] = (crc >> 8) & 0xFF;
-  buffer[index++] = crc & 0xFF;
+	char buffer[256];
+	int len = snprintf(
+		buffer, sizeof(buffer),
+		"/pwm: %d enable: %d shutoff: %d chargeState: %d id: %d val: %d\n",
+		pwmSlave, enable, shutoff, chargeState, identifier, value);
 
-  // Stop byte
-  buffer[index++] = '\n';
-	
-	SendBuffer(USART_MASTERSLAVE, buffer, index);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) buffer, len);
+}
+
+
+void debug_printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+	char buffer[256];
+	int len = vsnprintf(buffer, sizeof(buffer), fmt, args);
+
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "> ", 2);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) buffer, len);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "\n", 1);
+}
+
+void debug_print(char * message) {
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "> ", 2);
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) message, strlen(message));
+	SendBuffer(USART_MASTERSLAVE, (uint8_t *) "\n", 1);
 }
 #endif
 #ifdef SLAVE
