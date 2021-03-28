@@ -481,6 +481,9 @@ int main (void)
       ShutOff();
     }
 #endif
+    // HACK: we don't currently have a slave connected.
+    ResetTimeout();
+
     if (GetTargetPosition() != 0) {
       if (GetTargetPosition() != GetPos()) {
         speed += GetTargetDirection();
@@ -488,12 +491,12 @@ int main (void)
           "aiming for %d from %d. speed = %d",
           GetTargetPosition(), GetPos(), speed);
         // SetPWM(speed);
-        SetEnable(SET);
+        // SetEnable(SET);
       } else {
         debug_printf("arrived at %d", GetPos());
         ClearTargetPosition();
         // SetPWM(0);
-        SetEnable(RESET);
+        // SetEnable(RESET);
         speed = 0;
       }
     }
