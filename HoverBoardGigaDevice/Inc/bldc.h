@@ -49,4 +49,6 @@ void SetPWM(int16_t setPwm);
 //----------------------------------------------------------------------------
 void CalculateBLDC(void);
 
+int8_t GetPos();
+
 #endif

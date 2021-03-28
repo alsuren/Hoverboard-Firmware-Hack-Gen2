@@ -32,6 +32,7 @@
 #include "../Inc/setup.h"
 #include "../Inc/defines.h"
 #include "../Inc/config.h"
+#include "../Inc/commsMasterSlave.h"
 
 // Internal constants
 const int16_t pwm_res = 72000000 / 2 / PWM_FREQ; // = 2000
@@ -133,6 +134,7 @@ static __INLINE void blockPWM(int pwm, int pwmPos, int *y, int *b, int *g)
 //----------------------------------------------------------------------------
 void SetEnable(FlagStatus setEnable)
 {
+  debug_printf("SetEnable(%d)", setEnable);
 	bldc_enable = setEnable;
 }
 
@@ -142,6 +144,11 @@ void SetEnable(FlagStatus setEnable)
 void SetPWM(int16_t setPwm)
 {
 	bldc_inputFilterPwm = CLAMP(setPwm, -1000, 1000);
+}
+
+int8_t GetPos()
+{
+  return pos;
 }
 
 //----------------------------------------------------------------------------

@@ -46,9 +46,9 @@
 #include <math.h>
 #include "arm_math.h"
 
+int32_t speed = 0; 												// global variable for speed.    -1000 to 1000
 #ifdef MASTER
 int32_t steer = 0; 												// global variable for steering. -1000 to 1000
-int32_t speed = 0; 												// global variable for speed.    -1000 to 1000
 FlagStatus activateWeakening = RESET;			// global variable for weakening
 FlagStatus beepsBackwards = RESET;  			// global variable for beeps backwards
 
@@ -479,6 +479,24 @@ int main (void)
     if (inactivity_timeout_counter > (INACTIVITY_TIMEOUT * 60 * 1000) / (DELAY_IN_MAIN_LOOP + 1))
 		{
       ShutOff();
+    }
+#endif
+#ifdef SLAVE
+    if (GetTargetPosition() != 0) {
+      if (GetTargetPosition() != GetPos()) {
+        speed += GetTargetDirection();
+        debug_printf(
+          "aiming for %d from %d. speed = %d",
+          GetTargetPosition(), GetPos(), speed);
+        SetPWM(speed);
+        SetEnable(SET);
+      } else {
+        debug_printf("arrived at %d", GetPos());
+        ClearTargetPosition();
+        SetPWM(0);
+        SetEnable(RESET);
+        speed = 0;
+      }
     }
 #endif
 

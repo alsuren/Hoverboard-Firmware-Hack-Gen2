@@ -73,11 +73,26 @@ static uint8_t sAsciiCommandRecord = 0;
 static uint8_t sUSARTAsciiCommandRecordBuffer[256];
 static uint8_t sUSARTAsciiCommandRecordBufferCounter = 0;
 
+int8_t target_position;
+int8_t target_direction;
+
 void CheckUSARTMasterSlaveInput(uint8_t u8USARTBuffer[]);
 void CheckUSARTAsciiCommandInput(uint8_t USARTBuffer[]);
 
 void SendBuffer(uint32_t usart_periph, uint8_t buffer[], uint8_t length);
 uint16_t CalcCRC(uint8_t *ptr, int count);
+
+
+void ClearTargetPosition(void) {
+	target_position = 0;
+}
+int8_t GetTargetPosition(void) {
+	return target_position;
+}
+int8_t GetTargetDirection(void) {
+	return target_direction;
+}
+
 
 //----------------------------------------------------------------------------
 // Update USART master slave input
@@ -246,17 +261,32 @@ void CheckUSARTMasterSlaveInput(uint8_t USARTBuffer[])
 #endif
 }
 
+int8_t inc_pos(int8_t pos) {
+	int8_t base_0 = pos - 1;
+	base_0 = (base_0 + 1) % 6;
+	return base_0 + 1;
+}
+int8_t dec_pos(int8_t pos) {
+	int8_t base_0 = pos - 1;
+	base_0 = ((base_0 - 1) + 6) % 6;
+	return base_0 + 1;
+}
+
 void CheckUSARTAsciiCommandInput(uint8_t USARTBuffer[])
 {
 	debug_printf("%s", (char *)USARTBuffer);
 
-	int cmp = strcmp((char *)USARTBuffer, "!ping\n");
-	if (!cmp) {
+	if (!strcmp((char *)USARTBuffer, "!ping\n")) {
 		debug_printf("pong");
+	} else if (!strcmp((char *)USARTBuffer, "!forward\n")) {
+        int8_t pos = GetPos();
+		debug_printf("moving forward 1 space from %d", pos);
+		target_position = inc_pos(pos);
+		target_direction = 1;
 	} else {
-		debug_printf("%s - command not known %d", (char *)USARTBuffer, cmp);
+		debug_printf("%s - command not known", (char *)USARTBuffer);
 		for (int i = 0; USARTBuffer[i] != '\0'; i++) {
-			debug_printf("%d", USARTBuffer[i]);
+			debug_printf("%d - %c", USARTBuffer[i], USARTBuffer[i]);
 		}
 	}
 }
